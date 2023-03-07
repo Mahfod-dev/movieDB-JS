@@ -43,6 +43,13 @@ var resultsWrapper = document.querySelector('.results')
 input.addEventListener('input', debounce(onInput, 2000))
 
 var displayMovies = movies => {
+
+	if (!movies.length) {
+    dropdown.classList.remove('is-active')
+    return
+  }
+
+
   return movies.map(movie => {
     displayMovieCard(movie)
   })
