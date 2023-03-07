@@ -1,11 +1,12 @@
 import axios from 'axios'
-import {debounce, checkDOMExists} from './utils'
+import {checkDOMExists} from './utils'
+import {createAutoComplete} from './autoComplete'
 
 checkDOMExists('.input')
 checkDOMExists('.dropdown')
-checkDOMExists('#results')
+checkDOMExists('.results')
 
-var fetchMovies = async searchTerm => {
+export var fetchData = async searchTerm => {
   var {data} = await axios.get('http://www.omdbapi.com/', {
     params: {
       // eslint-disable-next-line no-undef
@@ -21,7 +22,7 @@ var fetchMovies = async searchTerm => {
   return data.Search
 }
 
-var fetchSingleMovie = async id => {
+export var fetchSingleMovie = async id => {
   var {data} = await axios.get('http://www.omdbapi.com/', {
     params: {
       // eslint-disable-next-line no-undef
@@ -32,80 +33,41 @@ var fetchSingleMovie = async id => {
   return data
 }
 
-var root = document.querySelector('.autocomplete')
-
-root.innerHTML = `
-	
-  <label><b>Search For a Movie</b></label>
-  <input class="input" />
-  <div class="dropdown">
-    <div class="dropdown-menu">
-      <div class="dropdown-content results"></div>
-    </div>
-  </div>
-
-
-`
-
-var input = document.querySelector('input')
-var dropdown = document.querySelector('.dropdown')
-var resultsWrapper = document.querySelector('.results')
-
-input.addEventListener('input', debounce(onInput, 2000))
-
-var displayMovies = movies => {
-  if (!movies.length) {
-    dropdown.classList.remove('is-active')
-    return
-  }
-
-  return movies.map(movie => {
- 
-
-    displayMovieCard(movie)
-  })
-}
-
- var displayMovieCard =  movie => {
-  var option = document.createElement('a')
-  var imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster
-
-  option.classList.add('dropdown-item')
-
-  option.innerHTML = `
+createAutoComplete({
+  root: document.querySelector('.autocomplete'),
+  renderOption(movie) {
+    var imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster
+    return `
  <img src="${imgSrc}" />
       ${movie.Title}
 	`
+  },
+  onOptionSelect(movie) {
+    console.log(movie)
+    movieTemplate(movie)
+  },
+  inputValue(movie) {
+    return movie.Title
+  },
+  async fetchData(searchTerm) {
+    var {data} = await axios.get('http://www.omdbapi.com/', {
+      params: {
+        // eslint-disable-next-line no-undef
+        apikey: `${process.env.API_KEY}`,
+        s: searchTerm,
+      },
+    })
 
-  option.addEventListener('click',async () => {
-    dropdown.classList.remove('is-active')
-    input.value = movie.Title
+    if (data.Error) {
+      return []
+    }
 
-    const singleMovie = await fetchSingleMovie(movie.imdbID)
-	movieTemplate(singleMovie)
-  })
-
-  resultsWrapper.appendChild(option)
-}
-
-async function onInput(e) {
-  resultsWrapper.innerHTML = ''
-
-  var movies = await fetchMovies(e.target.value)
-  dropdown.classList.add('is-active')
-
-  displayMovies(movies)
-}
-
-document.addEventListener('click', e => {
-  if (!root.contains(e.target)) {
-    dropdown.classList.remove('is-active')
-  }
+    return data.Search
+  },
 })
 
-var movieTemplate = (movieDetail)=>{
-
-	var html = `
+export var movieTemplate = movieDetail => {
+  var html = `
 	   <article class="media">
       <figure class="media-left">
         <p class="image">
@@ -120,10 +82,29 @@ var movieTemplate = (movieDetail)=>{
         </div>
       </div>
     </article>
+	<article class='notification is-primary>
+	<p class='title'>${movieDetail.Awards}</p>
+	<p class='subtitle'>Awards</p>
+	</article>
+	<article class='notification is-primary>
+	<p class='title'>${movieDetail.BoxOffice}</p>
+	<p class='subtitle'>Box Office</p>
+	</article>
+	<article class='notification is-primary>
+	<p class='title'>${movieDetail.Metascore}</p>
+	<p class='subtitle'>Meta Score</p>
+	</article>
+	<article class='notification is-primary>
+	<p class='title'>${movieDetail.imdbRating}</p>
+	<p class='subtitle'>IMDB Rating</p>
+	</article>
+	<article class='notification is-primary>
+	<p class='title'>${movieDetail.imdbVotes}</p>
+	<p class='subtitle'>IMDB Votes</p>
+	</article>
 	
 	
 	`
 
-	document.querySelector('#summary').innerHTML = html
-
+  document.querySelector('#summary').innerHTML = html
 }
