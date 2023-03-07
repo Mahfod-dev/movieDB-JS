@@ -49,21 +49,30 @@ var displayMovies = movies => {
 }
 
 var displayMovieCard = movie => {
-  const option = document.createElement('a')
+  var option = document.createElement('a')
+  var imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster
 
   option.classList.add('dropdown-item')
 
   option.innerHTML = `
- <img src="${movie.Poster}" />
+ <img src="${imgSrc}" />
       ${movie.Title}
 	`
   resultsWrapper.appendChild(option)
 }
 
 async function onInput(e) {
-  console.log(e.target.value)
-  const movies = await fetchMovies(e.target.value)
+  resultsWrapper.innerHTML = ''
+
+  var movies = await fetchMovies(e.target.value)
   dropdown.classList.add('is-active')
 
   displayMovies(movies)
 }
+
+
+document.addEventListener('click', e => {
+if (!root.contains(e.target)) {
+    dropdown.classList.remove('is-active')
+  }
+})
